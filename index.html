@@ -72,13 +72,15 @@
         <main class="canvas-area">
           <div id="status-bar" class="status-bar hidden"></div>
           <div id="er-canvas" class="er-canvas">
-            <div class="canvas-empty">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" opacity="0.3">
-                <rect x="8" y="8" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
-                <rect x="36" y="28" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
-                <path d="M28 22 L36 42" stroke="#555" stroke-width="2" stroke-dasharray="4 2"/>
-              </svg>
-              <p>左のリストからテーブルを選択すると<br>ER 図が表示されます</p>
+            <div id="er-canvas-inner" class="er-canvas-inner">
+              <div class="canvas-empty" id="canvas-empty">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" opacity="0.3">
+                  <rect x="8" y="8" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
+                  <rect x="36" y="28" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
+                  <path d="M28 22 L36 42" stroke="#555" stroke-width="2" stroke-dasharray="4 2"/>
+                </svg>
+                <p>左のリストからテーブルを選択すると<br>ER 図が表示されます</p>
+              </div>
             </div>
           </div>
           <div class="canvas-toolbar">

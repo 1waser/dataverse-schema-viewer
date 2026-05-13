@@ -54,6 +54,7 @@ function showMain(account) {
   document.getElementById('main-screen').classList.remove('hidden');
   document.getElementById('user-name').textContent =
     account.name ?? account.username ?? 'ユーザー';
+  initCanvasInteraction();
 }
 
 // ===== テーブル読み込み =====
@@ -115,6 +116,7 @@ async function onTableSelect(logicalName) {
     const index = cardIndex++;
     renderERCard(table, columns, relations, index, onFieldClick);
     drawConnections(tableDetails);
+    document.getElementById('canvas-empty')?.remove();
     setStatus(null);
   } catch (e) {
     activeTableNames.delete(logicalName);
