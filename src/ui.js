@@ -38,11 +38,21 @@ function typeMeta(type) {
 // ===== テーブル一覧 =====
 function renderTableList(tables, activeNames, onSelect) {
   const list = document.getElementById('table-list');
-  if (!tables.length) {
+
+  // 検索ボックスの現在値でフィルタ（常時適用）
+  const q = (document.getElementById('search-tables')?.value ?? '').trim().toLowerCase();
+  const filtered = q
+    ? tables.filter(t => {
+        const display = (t.DisplayName?.UserLocalizedLabel?.Label ?? '').toLowerCase();
+        return display.includes(q) || t.LogicalName.toLowerCase().includes(q);
+      })
+    : tables;
+
+  if (!filtered.length) {
     list.innerHTML = '<p class="empty-state">テーブルが見つかりません</p>';
     return;
   }
-  list.innerHTML = tables.map(t => {
+  list.innerHTML = filtered.map(t => {
     const display  = t.DisplayName?.UserLocalizedLabel?.Label ?? t.LogicalName;
     const isActive = activeNames.has(t.LogicalName);
     const isCustom = t.IsCustomEntity;
@@ -402,8 +412,14 @@ function drawConnections(tableDetails) {
       hit.setAttribute('d', d);
       hit.setAttribute('class', 'relation-hit');
       hit.style.pointerEvents = 'stroke';
-      hit.addEventListener('mouseenter', e => showRelTooltip(e, rel));
-      hit.addEventListener('mouseleave', hideRelTooltip);
+      hit.addEventListener('mouseenter', e => {
+        path.classList.add('relation-line-hover');
+        showRelTooltip(e, rel);
+      });
+      hit.addEventListener('mouseleave', () => {
+        path.classList.remove('relation-line-hover');
+        hideRelTooltip();
+      });
 
       // アニメーション玉（3つ、N→1方向）
       const ballColors = ['#0078d4','#60a5fa','#93c5fd'];
@@ -450,15 +466,40 @@ function getEdgePoint(fromCard, toCard) {
 let tooltip = null;
 function showRelTooltip(e, rel) {
   hideRelTooltip();
+
+  // FK列の表示名を取得
+  const refCols = _tableDetails[rel.ReferencingEntity]?.columns ?? [];
+  const fkCol   = refCols.find(c => c.LogicalName === rel.ReferencingAttribute);
+  const fkDisplay = fkCol?.DisplayName?.UserLocalizedLabel?.Label ?? rel.ReferencingAttribute ?? '—';
+
+  // 参照先テーブル表示名
+  const nTable  = _tableDetails[rel.ReferencingEntity];
+  const oneTable = _tableDetails[rel.ReferencedEntity];
+
   tooltip = document.createElement('div');
   tooltip.className = 'rel-tooltip';
   tooltip.innerHTML = `
     <div class="rel-tooltip-title">${rel.SchemaName ?? 'Relation'}</div>
-    <div class="rel-tooltip-row">N: ${rel.ReferencingEntity}</div>
-    <div class="rel-tooltip-row">1: ${rel.ReferencedEntity}</div>
-    <div class="rel-tooltip-row" style="color:#94a3b8;font-size:10px">${rel.ReferencingAttribute ?? ''}</div>`;
-  tooltip.style.cssText = `left:${e.clientX + 12}px;top:${e.clientY - 10}px`;
+    <div class="rel-tooltip-section">
+      <span class="rel-tooltip-badge n">N</span>
+      <span class="rel-tooltip-entity">${rel.ReferencingEntity}</span>
+    </div>
+    <div class="rel-tooltip-fk">
+      <div class="rel-tooltip-fk-label">外部キー (FK)</div>
+      <div class="rel-tooltip-fk-name">${fkDisplay}</div>
+      <div class="rel-tooltip-fk-logical">${rel.ReferencingAttribute ?? ''}</div>
+    </div>
+    <div class="rel-tooltip-section">
+      <span class="rel-tooltip-badge one">1</span>
+      <span class="rel-tooltip-entity">${rel.ReferencedEntity}</span>
+    </div>`;
+  tooltip.style.cssText = `left:${e.clientX + 14}px;top:${e.clientY - 10}px`;
   document.body.appendChild(tooltip);
+
+  // 画面端補正
+  const r = tooltip.getBoundingClientRect();
+  if (r.right > window.innerWidth - 10)
+    tooltip.style.left = (e.clientX - r.width - 10) + 'px';
 }
 function hideRelTooltip() { tooltip?.remove(); tooltip = null; }
 
