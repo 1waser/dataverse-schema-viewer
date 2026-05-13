@@ -168,7 +168,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100dv
 }
 
 #er-canvas{flex:1;position:relative;overflow:hidden;cursor:default}
-.er-canvas-inner{position:absolute;top:0;left:0;width:4000px;height:4000px;transform-origin:0 0}
+.er-canvas-inner{position:absolute;top:0;left:0;width:4000px;height:4000px;transform-origin:0 0;pointer-events:none}
+.er-table-card{pointer-events:auto}
 
 .canvas-empty{position:absolute;top:200px;left:50%;transform:translateX(-50%);
   text-align:center;color:var(--text-sub);font-size:14px;line-height:1.8;pointer-events:none;white-space:nowrap}
