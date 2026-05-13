@@ -57,7 +57,6 @@ async function fetchColumns(envUrl, logicalName, token) {
     'IsPrimaryId',
     'IsPrimaryName',
     'IsCustomAttribute',
-    'MaxLength',
     'RequiredLevel',
     'Description',
   ].join(',');
