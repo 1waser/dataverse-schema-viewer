@@ -42,7 +42,6 @@ let cardIndex = 0;
     loadDemo();
     document.getElementById('demo-badge').classList.remove('hidden');
   };
-  document.getElementById('btn-demo').addEventListener('click', startDemo);
   document.getElementById('btn-demo-login').addEventListener('click', startDemo);
 
   // テーブル読み込み
