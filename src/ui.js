@@ -10,7 +10,7 @@ const CARD_START_Y  = 60;
 
 const cardPositions = {};
 
-// 型 → アイコン・色
+// 型メタ
 const TYPE_META = {
   Uniqueidentifier: { icon: '🔑', color: '#f59e0b', label: 'GUID' },
   String:           { icon: '📝', color: '#6366f1', label: 'Text' },
@@ -26,17 +26,16 @@ const TYPE_META = {
   Customer:         { icon: '🔗', color: '#0078d4', label: 'FK'   },
   Owner:            { icon: '👤', color: '#64748b', label: 'Owner'},
   Picklist:         { icon: '▾',  color: '#f97316', label: 'List' },
-  MultiSelectPicklist: { icon: '▾▾', color: '#f97316', label: 'MList'},
+  MultiSelectPicklist:{ icon:'▾▾', color: '#f97316', label: 'MList'},
   Status:           { icon: '●',  color: '#64748b', label: 'Status'},
   State:            { icon: '●',  color: '#64748b', label: 'State' },
   Virtual:          { icon: '◌',  color: '#94a3b8', label: 'Virtual'},
 };
-
 function typeMeta(type) {
   return TYPE_META[type] ?? { icon: '·', color: '#94a3b8', label: type ?? '?' };
 }
 
-// ===== テーブル一覧レンダリング =====
+// ===== テーブル一覧 =====
 function renderTableList(tables, activeNames, onSelect) {
   const list = document.getElementById('table-list');
   if (!tables.length) {
@@ -46,19 +45,25 @@ function renderTableList(tables, activeNames, onSelect) {
   list.innerHTML = tables.map(t => {
     const display  = t.DisplayName?.UserLocalizedLabel?.Label ?? t.LogicalName;
     const isActive = activeNames.has(t.LogicalName);
+    const isCustom = t.IsCustomEntity;
     return `
-      <div class="table-item ${isActive ? 'active' : ''}" data-logical="${t.LogicalName}" title="${t.LogicalName}">
-        <span class="table-icon">${t.IsCustomEntity ? '✦' : '◈'}</span>
+      <div class="table-item ${isActive ? 'active' : ''} ${isCustom ? 'custom' : 'standard'}"
+           data-logical="${t.LogicalName}" title="${t.LogicalName}" draggable="true">
+        <span class="table-icon">${isCustom ? '✦' : '◈'}</span>
         <span class="table-name">${display}</span>
+        <span class="table-type-dot ${isCustom ? 'dot-custom' : 'dot-standard'}"></span>
       </div>`;
   }).join('');
 
-  list.querySelectorAll('.table-item').forEach(el =>
-    el.addEventListener('click', () => onSelect(el.dataset.logical))
-  );
+  list.querySelectorAll('.table-item').forEach(el => {
+    el.addEventListener('click', () => onSelect(el.dataset.logical));
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', el.dataset.logical);
+    });
+  });
 }
 
-// ===== ER カードレンダリング =====
+// ===== ER カード =====
 function renderERCard(table, columns, relations, index, onFieldClick) {
   const canvas = document.getElementById('er-canvas-inner');
   document.getElementById(`card-${table.LogicalName}`)?.remove();
@@ -68,9 +73,15 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
   }
   const pos = cardPositions[table.LogicalName];
 
-  const display    = table.DisplayName?.UserLocalizedLabel?.Label ?? table.LogicalName;
+  const display     = table.DisplayName?.UserLocalizedLabel?.Label ?? table.LogicalName;
   const previewCols = columns.slice(0, PREVIEW_FIELDS);
-  const remaining  = columns.length - previewCols.length;
+  const remaining   = columns.length - previewCols.length;
+  const isCustom    = table.IsCustomEntity;
+
+  // ヘッダー色: 標準=緑、カスタム=青
+  const headerGrad = isCustom
+    ? 'linear-gradient(135deg,#0078d4 0%,#1565c0 100%)'
+    : 'linear-gradient(135deg,#059669 0%,#047857 100%)';
 
   const fieldsHtml = previewCols.map(col => {
     const colDisplay = col.DisplayName?.UserLocalizedLabel?.Label ?? col.LogicalName;
@@ -78,17 +89,14 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
     const meta  = typeMeta(isPK ? 'Uniqueidentifier' : col.AttributeType);
     return `
       <div class="field-row" data-logical="${col.LogicalName}">
-        <span class="field-type-icon" style="color:${meta.color}" title="${meta.label}">${meta.icon}</span>
+        <span class="field-type-icon" style="color:${meta.color}">${meta.icon}</span>
         <span class="field-name ${isPK ? 'field-pk' : ''}">${colDisplay}</span>
         <span class="field-type-badge">${meta.label}</span>
       </div>`;
   }).join('');
 
   const moreHtml = remaining > 0
-    ? `<div class="more-fields">＋ ${remaining} 列</div>`
-    : '';
-
-  const relCount = relations.length;
+    ? `<div class="more-fields">＋ ${remaining} 列</div>` : '';
 
   const card = document.createElement('div');
   card.className = 'er-table-card';
@@ -97,21 +105,21 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
   card.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${CARD_WIDTH}px`;
 
   card.innerHTML = `
-    <div class="card-header">
-      <div class="entity-icon">${table.IsCustomEntity ? '✦' : '◈'}</div>
+    <div class="card-header" style="background:${headerGrad}">
+      <div class="entity-icon">${isCustom ? '✦' : '◈'}</div>
       <div class="entity-titles">
         <div class="entity-name">${display}</div>
         <div class="entity-logical">${table.LogicalName}</div>
       </div>
       <div class="card-badges">
-        ${table.IsCustomEntity ? '<span class="badge badge-custom">Custom</span>' : ''}
-        ${relCount > 0 ? `<span class="badge badge-rel">${relCount} rel</span>` : ''}
+        ${isCustom ? '<span class="badge badge-custom">Custom</span>' : '<span class="badge badge-std">Standard</span>'}
+        ${relations.length > 0 ? `<span class="badge badge-rel">${relations.length} rel</span>` : ''}
       </div>
     </div>
     <div class="card-body">${fieldsHtml}${moreHtml}</div>
     <div class="card-footer">
       <span>${columns.length} 列</span>
-      <span>${relCount} リレーション</span>
+      <span>${relations.length} リレーション</span>
     </div>`;
 
   card.querySelectorAll('.field-row').forEach(el => {
@@ -129,10 +137,7 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
 function smartPosition(logicalName, index) {
   const col = index % GRID_COLS;
   const row = Math.floor(index / GRID_COLS);
-  return {
-    x: CARD_START_X + col * GRID_GAP_X,
-    y: CARD_START_Y + row * GRID_GAP_Y,
-  };
+  return { x: CARD_START_X + col * GRID_GAP_X, y: CARD_START_Y + row * GRID_GAP_Y };
 }
 
 // ===== ドラッグ =====
@@ -141,9 +146,8 @@ function makeDraggable(card) {
     if (e.target.closest('.field-row') || e.target.closest('.more-fields')) return;
     e.preventDefault();
     card.classList.add('dragging');
-
-    const origX  = parseInt(card.style.left);
-    const origY  = parseInt(card.style.top);
+    const origX = parseInt(card.style.left);
+    const origY = parseInt(card.style.top);
     const startX = e.clientX;
     const startY = e.clientY;
 
@@ -181,19 +185,18 @@ function initCanvasInteraction() {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     const delta  = e.deltaY < 0 ? 1.1 : 0.91;
-    const next   = Math.min(2.5, Math.max(0.2, canvasScale * delta));
-
+    const next   = clampScale(canvasScale * delta);
     canvasPanX = mouseX - (mouseX - canvasPanX) * (next / canvasScale);
     canvasPanY = mouseY - (mouseY - canvasPanY) * (next / canvasScale);
     canvasScale = next;
     applyTransform(inner);
+    syncSlider();
   }, { passive: false });
 
-  // 背景ドラッグでパン
+  // 背景パン
   let panStart = null;
   wrap.addEventListener('mousedown', e => {
-    if (e.target !== wrap && e.target !== inner &&
-        !e.target.classList.contains('canvas-bg')) return;
+    if (e.target !== wrap && e.target !== inner) return;
     panStart = { x: e.clientX - canvasPanX, y: e.clientY - canvasPanY };
     wrap.style.cursor = 'grabbing';
   });
@@ -203,30 +206,39 @@ function initCanvasInteraction() {
     canvasPanY = e.clientY - panStart.y;
     applyTransform(inner);
   });
-  window.addEventListener('mouseup', () => {
-    panStart = null;
-    wrap.style.cursor = '';
-  });
+  window.addEventListener('mouseup', () => { panStart = null; wrap.style.cursor = ''; });
 
-  // ツールバーボタン
-  document.getElementById('btn-zoom-in').addEventListener('click',  () => zoomBy(1.2));
-  document.getElementById('btn-zoom-out').addEventListener('click', () => zoomBy(0.83));
-  document.getElementById('btn-fit').addEventListener('click', fitAll);
+  // ズームスライダー
+  const slider = document.getElementById('zoom-slider');
+  if (slider) {
+    slider.addEventListener('input', () => {
+      const next = clampScale(parseInt(slider.value) / 100);
+      const cx = wrap.clientWidth / 2;
+      const cy = wrap.clientHeight / 2;
+      canvasPanX = cx - (cx - canvasPanX) * (next / canvasScale);
+      canvasPanY = cy - (cy - canvasPanY) * (next / canvasScale);
+      canvasScale = next;
+      applyTransform(inner);
+      document.getElementById('zoom-label').textContent = Math.round(canvasScale * 100) + '%';
+    });
+  }
+
+  // ボタン
+  document.getElementById('btn-fit')?.addEventListener('click', fitAll);
+  document.getElementById('btn-auto-layout')?.addEventListener('click', autoLayout);
 }
 
-function zoomBy(factor) {
-  const wrap  = document.getElementById('er-canvas');
-  const inner = document.getElementById('er-canvas-inner');
-  const cx = wrap.clientWidth  / 2;
-  const cy = wrap.clientHeight / 2;
-  const next = Math.min(2.5, Math.max(0.2, canvasScale * factor));
-  canvasPanX = cx - (cx - canvasPanX) * (next / canvasScale);
-  canvasPanY = cy - (cy - canvasPanY) * (next / canvasScale);
-  canvasScale = next;
-  applyTransform(inner);
+function clampScale(s) { return Math.min(2.5, Math.max(0.2, s)); }
+
+function syncSlider() {
+  const slider = document.getElementById('zoom-slider');
+  const label  = document.getElementById('zoom-label');
+  if (slider) slider.value = Math.round(canvasScale * 100);
+  if (label)  label.textContent = Math.round(canvasScale * 100) + '%';
 }
 
 function applyTransform(inner) {
+  inner = inner || document.getElementById('er-canvas-inner');
   inner.style.transform = `translate(${canvasPanX}px,${canvasPanY}px) scale(${canvasScale})`;
   drawConnections();
 }
@@ -234,111 +246,188 @@ function applyTransform(inner) {
 function fitAll() {
   const cards = [...document.querySelectorAll('.er-table-card')];
   if (!cards.length) return;
-
   const wrap = document.getElementById('er-canvas');
   const inner = document.getElementById('er-canvas-inner');
-  const ww = wrap.clientWidth  - 80;
+  const ww = wrap.clientWidth - 80;
   const wh = wrap.clientHeight - 80;
-
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   cards.forEach(c => {
     const x = parseInt(c.style.left), y = parseInt(c.style.top);
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
+    minX = Math.min(minX, x); minY = Math.min(minY, y);
     maxX = Math.max(maxX, x + c.offsetWidth);
     maxY = Math.max(maxY, y + c.offsetHeight);
   });
-
-  const contentW = maxX - minX || 1;
-  const contentH = maxY - minY || 1;
-  canvasScale = Math.min(2, Math.min(ww / contentW, wh / contentH));
-  canvasPanX  = (ww - contentW * canvasScale) / 2 + 40 - minX * canvasScale;
-  canvasPanY  = (wh - contentH * canvasScale) / 2 + 40 - minY * canvasScale;
+  const cw = maxX - minX || 1, ch = maxY - minY || 1;
+  canvasScale = clampScale(Math.min(ww / cw, wh / ch));
+  canvasPanX  = (ww - cw * canvasScale) / 2 + 40 - minX * canvasScale;
+  canvasPanY  = (wh - ch * canvasScale) / 2 + 40 - minY * canvasScale;
   applyTransform(inner);
+  syncSlider();
 }
 
-// ===== 接続線 =====
+// ===== 最適配置 =====
+function autoLayout() {
+  const cards = [...document.querySelectorAll('.er-table-card')];
+  if (!cards.length) return;
+
+  const nodes = new Set(cards.map(c => c.dataset.logical));
+  const childrenOf = {};
+  const inDegree   = {};
+  nodes.forEach(n => { childrenOf[n] = []; inDegree[n] = 0; });
+
+  // ReferencedEntity = 1側(親)  ReferencingEntity = N側(子)
+  Object.values(_tableDetails).forEach(({ relations }) => {
+    relations.forEach(rel => {
+      const parent = rel.ReferencedEntity;
+      const child  = rel.ReferencingEntity;
+      if (nodes.has(parent) && nodes.has(child) && parent !== child) {
+        if (!childrenOf[parent].includes(child)) {
+          childrenOf[parent].push(child);
+          inDegree[child]++;
+        }
+      }
+    });
+  });
+
+  // BFS でレイヤー割り当て
+  const layer = {};
+  const queue = [...nodes].filter(n => inDegree[n] === 0);
+  queue.forEach(n => (layer[n] = 0));
+  const visited = new Set(queue);
+
+  while (queue.length) {
+    const node = queue.shift();
+    childrenOf[node].forEach(child => {
+      layer[child] = Math.max(layer[child] ?? 0, layer[node] + 1);
+      if (!visited.has(child)) { visited.add(child); queue.push(child); }
+    });
+  }
+  nodes.forEach(n => { if (layer[n] === undefined) layer[n] = 0; });
+
+  // レイヤーごとにグループ化して配置
+  const byLayer = {};
+  nodes.forEach(n => {
+    const l = layer[n];
+    (byLayer[l] = byLayer[l] ?? []).push(n);
+  });
+
+  const COL_GAP = 360, ROW_GAP = 300, START_X = 60, START_Y = 60;
+  const maxPerCol = Math.max(...Object.values(byLayer).map(a => a.length));
+
+  Object.entries(byLayer).forEach(([l, list]) => {
+    const offset = ((maxPerCol - list.length) * ROW_GAP) / 2;
+    list.forEach((name, i) => {
+      const x = START_X + parseInt(l) * COL_GAP;
+      const y = START_Y + offset + i * ROW_GAP;
+      cardPositions[name] = { x, y };
+      const card = document.getElementById(`card-${name}`);
+      if (card) { card.style.left = x + 'px'; card.style.top = y + 'px'; }
+    });
+  });
+
+  drawConnections();
+  setTimeout(fitAll, 50);
+}
+
+// ===== 接続線（アニメーション玉付き） =====
 let _tableDetails = {};
+let _pathCounter  = 0;
 
 function drawConnections(tableDetails) {
   if (tableDetails) _tableDetails = tableDetails;
 
-  const wrap  = document.getElementById('er-canvas');
+  const wrap = document.getElementById('er-canvas');
   let svg = document.getElementById('connection-svg');
   if (!svg) {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'connection-svg';
     svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;';
     wrap.insertBefore(svg, wrap.firstChild);
-
-    // defs: arrowhead
-    svg.innerHTML = `
-      <defs>
-        <marker id="arrow-many" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <path d="M0,0 L0,7 L9,3.5 Z" fill="#0078d4" opacity="0.7"/>
-        </marker>
-        <marker id="arrow-one" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <circle cx="3" cy="3" r="2.5" fill="#0078d4" opacity="0.7"/>
-        </marker>
-      </defs>`;
+    svg.innerHTML = `<defs>
+      <marker id="arrow-end" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+        <path d="M0,0 L0,7 L9,3.5 Z" fill="#0078d4" opacity="0.65"/>
+      </marker>
+      <marker id="arrow-end-green" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+        <path d="M0,0 L0,7 L9,3.5 Z" fill="#059669" opacity="0.65"/>
+      </marker>
+    </defs>`;
   }
 
-  // SVGをキャンバス内transformに合わせる
-  const inner = document.getElementById('er-canvas-inner');
-  const g = svg.querySelector('g.conn-group') || (() => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  let g = svg.querySelector('g.conn-group');
+  if (!g) {
+    g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', 'conn-group');
     svg.appendChild(g);
-    return g;
-  })();
+  }
 
-  g.style.transform = inner.style.transform;
+  const inner = document.getElementById('er-canvas-inner');
+  g.style.transform = inner?.style.transform ?? '';
   g.innerHTML = '';
 
-  const drawn = new Set();
+  const drawn = new Map(); // key → offset count
 
   Object.values(_tableDetails).forEach(({ relations }) => {
     relations.forEach(rel => {
+      // N側 = ReferencingEntity (子), 1側 = ReferencedEntity (親)
+      const nCard = document.getElementById(`card-${rel.ReferencingEntity}`);
+      const oneCard = document.getElementById(`card-${rel.ReferencedEntity}`);
+      if (!nCard || !oneCard || nCard === oneCard) return;
+
       const key = [rel.ReferencingEntity, rel.ReferencedEntity].sort().join('|');
-      const fromCard = document.getElementById(`card-${rel.ReferencingEntity}`);
-      const toCard   = document.getElementById(`card-${rel.ReferencedEntity}`);
-      if (!fromCard || !toCard || fromCard === toCard) return;
+      const offsetIdx = drawn.get(key) ?? 0;
+      drawn.set(key, offsetIdx + 1);
+      const offset = offsetIdx * 18;
 
-      const offset = drawn.has(key) ? 30 : 0;
-      drawn.add(key);
+      const from = getEdgePoint(nCard, oneCard);   // N側 出発
+      const to   = getEdgePoint(oneCard, nCard);   // 1側 到着
 
-      const from = getEdgePoint(fromCard, toCard);
-      const to   = getEdgePoint(toCard, fromCard);
-
-      // ベジェ制御点（水平方向に引き出す）
       const dx = Math.abs(to.x - from.x);
       const cp = Math.max(80, dx * 0.5);
+      const fSign = from.side === 'right' ? 1 : -1;
+      const tSign = to.side   === 'right' ? 1 : -1;
 
-      const fromSign = from.side === 'right' ? 1 : -1;
-      const toSign   = to.side === 'right'   ? 1 : -1;
+      const pathId = `rel-path-${_pathCounter++}`;
+      const d = `M${from.x},${from.y + offset} C${from.x + fSign*cp},${from.y + offset} ${to.x + tSign*cp},${to.y + offset} ${to.x},${to.y + offset}`;
 
+      // パス本体
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      const d = `M${from.x},${from.y + offset}
-                 C${from.x + fromSign * cp},${from.y + offset}
-                  ${to.x + toSign * cp},${to.y + offset}
-                  ${to.x},${to.y + offset}`;
+      path.setAttribute('id', pathId);
       path.setAttribute('d', d);
       path.setAttribute('class', 'relation-line');
-      path.setAttribute('marker-end', 'url(#arrow-many)');
-      path.setAttribute('marker-start', 'url(#arrow-one)');
+      path.setAttribute('marker-end', 'url(#arrow-end)');
 
-      // ホバー用透明太線
-      const hitPath = path.cloneNode();
-      hitPath.setAttribute('class', 'relation-hit');
-      hitPath.setAttribute('marker-end', '');
-      hitPath.setAttribute('marker-start', '');
-      hitPath.dataset.label = rel.SchemaName ?? '';
-      hitPath.style.pointerEvents = 'stroke';
-      hitPath.addEventListener('mouseenter', e => showRelTooltip(e, rel));
-      hitPath.addEventListener('mouseleave', hideRelTooltip);
+      // ヒット領域
+      const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      hit.setAttribute('d', d);
+      hit.setAttribute('class', 'relation-hit');
+      hit.style.pointerEvents = 'stroke';
+      hit.addEventListener('mouseenter', e => showRelTooltip(e, rel));
+      hit.addEventListener('mouseleave', hideRelTooltip);
+
+      // アニメーション玉（3つ、N→1方向）
+      const ballColors = ['#0078d4','#60a5fa','#93c5fd'];
+      const balls = ballColors.map((color, i) => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('r', '4');
+        circle.setAttribute('fill', color);
+        circle.setAttribute('opacity', i === 0 ? '0.9' : i === 1 ? '0.6' : '0.35');
+
+        const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+        anim.setAttribute('dur', '2.4s');
+        anim.setAttribute('begin', `${(i * 0.8).toFixed(1)}s`);
+        anim.setAttribute('repeatCount', 'indefinite');
+        anim.setAttribute('rotate', 'auto');
+
+        const mpath = document.createElementNS('http://www.w3.org/2000/svg', 'mpath');
+        mpath.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${pathId}`);
+        anim.appendChild(mpath);
+        circle.appendChild(anim);
+        return circle;
+      });
 
       g.appendChild(path);
-      g.appendChild(hitPath);
+      balls.forEach(b => g.appendChild(b));
+      g.appendChild(hit);
     });
   });
 }
@@ -349,43 +438,34 @@ function getEdgePoint(fromCard, toCard) {
   const fw = fromCard.offsetWidth;
   const fh = fromCard.offsetHeight;
   const tx = parseInt(toCard.style.left);
-
   const fromCX = fx + fw / 2;
   const fromCY = fy + fh / 2;
-
-  if (tx > fromCX) {
-    return { x: fx + fw, y: fromCY, side: 'right' };
-  } else {
-    return { x: fx, y: fromCY, side: 'left' };
-  }
+  return tx > fromCX
+    ? { x: fx + fw, y: fromCY, side: 'right' }
+    : { x: fx,      y: fromCY, side: 'left'  };
 }
 
-// ===== リレーションツールチップ =====
+// ===== ツールチップ =====
 let tooltip = null;
-
 function showRelTooltip(e, rel) {
   hideRelTooltip();
   tooltip = document.createElement('div');
   tooltip.className = 'rel-tooltip';
   tooltip.innerHTML = `
     <div class="rel-tooltip-title">${rel.SchemaName ?? 'Relation'}</div>
-    <div class="rel-tooltip-row">${rel.ReferencingEntity} → ${rel.ReferencedEntity}</div>
-    <div class="rel-tooltip-row" style="color:var(--text-sub);font-size:10px">${rel.ReferencingAttribute ?? ''}</div>`;
+    <div class="rel-tooltip-row">N: ${rel.ReferencingEntity}</div>
+    <div class="rel-tooltip-row">1: ${rel.ReferencedEntity}</div>
+    <div class="rel-tooltip-row" style="color:#94a3b8;font-size:10px">${rel.ReferencingAttribute ?? ''}</div>`;
   tooltip.style.cssText = `left:${e.clientX + 12}px;top:${e.clientY - 10}px`;
   document.body.appendChild(tooltip);
 }
-
-function hideRelTooltip() {
-  tooltip?.remove();
-  tooltip = null;
-}
+function hideRelTooltip() { tooltip?.remove(); tooltip = null; }
 
 // ===== 詳細パネル =====
 function showDetailPanel(table, column) {
   const panel   = document.getElementById('detail-panel');
   const title   = document.getElementById('detail-title');
   const content = document.getElementById('detail-content');
-
   const display      = column.DisplayName?.UserLocalizedLabel?.Label ?? column.LogicalName;
   const tableDisplay = table.DisplayName?.UserLocalizedLabel?.Label ?? table.LogicalName;
   const desc         = column.Description?.UserLocalizedLabel?.Label ?? '—';
@@ -397,15 +477,13 @@ function showDetailPanel(table, column) {
       <h4>テーブル</h4>
       <div class="detail-row"><span class="detail-label">表示名</span><span class="detail-value">${tableDisplay}</span></div>
       <div class="detail-row"><span class="detail-label">論理名</span><span class="detail-value">${table.LogicalName}</span></div>
+      <div class="detail-row"><span class="detail-label">種別</span><span class="detail-value">${table.IsCustomEntity ? '🔵 カスタム' : '🟢 標準'}</span></div>
     </div>
     <div class="detail-section">
       <h4>列</h4>
       <div class="detail-row"><span class="detail-label">表示名</span><span class="detail-value">${display}</span></div>
       <div class="detail-row"><span class="detail-label">論理名</span><span class="detail-value">${column.LogicalName}</span></div>
-      <div class="detail-row">
-        <span class="detail-label">型</span>
-        <span class="detail-value" style="color:${meta.color};font-weight:600">${meta.icon} ${column.AttributeType ?? '—'}</span>
-      </div>
+      <div class="detail-row"><span class="detail-label">型</span><span class="detail-value" style="color:${meta.color};font-weight:600">${meta.icon} ${column.AttributeType ?? '—'}</span></div>
       <div class="detail-row"><span class="detail-label">主キー</span><span class="detail-value">${column.IsPrimaryId ? '✓' : '—'}</span></div>
       <div class="detail-row"><span class="detail-label">必須</span><span class="detail-value">${column.RequiredLevel?.Value ?? '—'}</span></div>
       <div class="detail-row"><span class="detail-label">カスタム</span><span class="detail-value">${column.IsCustomAttribute ? '✓' : '—'}</span></div>
@@ -414,7 +492,6 @@ function showDetailPanel(table, column) {
       <h4>説明</h4>
       <p style="font-size:12px;color:var(--text-sub);line-height:1.7">${desc}</p>
     </div>`;
-
   panel.classList.remove('hidden');
 }
 

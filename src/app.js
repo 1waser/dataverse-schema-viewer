@@ -77,6 +77,7 @@ function showMain(account) {
   document.getElementById('user-name').textContent =
     account.name ?? account.username ?? 'ユーザー';
   initCanvasInteraction();
+  renderGroupsPanel();
 }
 
 // ===== テーブル読み込み =====

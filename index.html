@@ -59,7 +59,7 @@
       </header>
 
       <div class="workspace">
-        <!-- サイドパネル: テーブル一覧 -->
+        <!-- サイドパネル -->
         <aside class="sidebar">
           <div class="sidebar-header">
             <h2>テーブル</h2>
@@ -68,11 +68,45 @@
           <div id="table-list" class="table-list">
             <p class="empty-state">環境 URL を入力して読み込んでください</p>
           </div>
+          <!-- グループパネル -->
+          <div id="groups-panel" class="groups-panel"></div>
         </aside>
 
-        <!-- メインキャンバス: ER図 -->
+        <!-- メインキャンバス -->
         <main class="canvas-area">
           <div id="status-bar" class="status-bar hidden"></div>
+
+          <!-- ツールバー（上） -->
+          <div class="canvas-topbar">
+            <button id="btn-auto-layout" class="tool-btn" title="最適配置">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="2" width="4" height="5" rx="1" fill="currentColor" opacity=".8"/>
+                <rect x="1" y="9" width="4" height="5" rx="1" fill="currentColor" opacity=".8"/>
+                <rect x="7" y="5" width="4" height="6" rx="1" fill="currentColor"/>
+                <rect x="13" y="3" width="2" height="3" rx="1" fill="currentColor" opacity=".6"/>
+                <rect x="13" y="10" width="2" height="3" rx="1" fill="currentColor" opacity=".6"/>
+                <line x1="5" y1="4.5" x2="7" y2="7" stroke="currentColor" stroke-width="1"/>
+                <line x1="5" y1="11.5" x2="7" y2="9" stroke="currentColor" stroke-width="1"/>
+                <line x1="11" y1="7" x2="13" y2="5" stroke="currentColor" stroke-width="1"/>
+                <line x1="11" y1="9" x2="13" y2="11" stroke="currentColor" stroke-width="1"/>
+              </svg>
+              最適配置
+            </button>
+            <button id="btn-fit" class="tool-btn" title="全体表示">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              全体表示
+            </button>
+            <button id="btn-export" class="tool-btn" title="PNG出力">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              書き出し
+            </button>
+          </div>
+
           <div id="er-canvas" class="er-canvas">
             <div id="er-canvas-inner" class="er-canvas-inner">
               <div class="canvas-empty" id="canvas-empty">
@@ -85,11 +119,15 @@
               </div>
             </div>
           </div>
-          <div class="canvas-toolbar">
-            <button id="btn-zoom-in" class="icon-btn" title="拡大">＋</button>
-            <button id="btn-zoom-out" class="icon-btn" title="縮小">－</button>
-            <button id="btn-fit" class="icon-btn" title="全体表示">⊡</button>
-            <button id="btn-export" class="icon-btn" title="PNG出力">↓</button>
+
+          <!-- ズームスライダー（右端） -->
+          <div class="zoom-slider-wrap">
+            <span class="zoom-label" id="zoom-label">100%</span>
+            <input type="range" id="zoom-slider" class="zoom-slider"
+              min="20" max="250" value="100" step="5"
+              orient="vertical" />
+            <span class="zoom-hint">＋</span>
+            <span class="zoom-hint" style="order:10">－</span>
           </div>
         </main>
 
@@ -105,12 +143,12 @@
     </div>
   </div>
 
-  <!-- MSAL.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
   <script src="src/auth.js"></script>
   <script src="src/api.js"></script>
   <script src="src/ui.js"></script>
   <script src="src/demo.js"></script>
+  <script src="src/groups.js"></script>
   <script src="src/app.js"></script>
 </body>
 </html>
