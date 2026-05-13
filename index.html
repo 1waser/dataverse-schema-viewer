@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dataverse Schema Viewer</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ログイン前 -->
+    <div id="login-screen" class="screen">
+      <div class="login-card">
+        <div class="logo">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="12" fill="#0078d4"/>
+            <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="white" opacity="0.9"/>
+            <circle cx="24" cy="24" r="6" fill="#0078d4"/>
+          </svg>
+        </div>
+        <h1>Dataverse Schema Viewer</h1>
+        <p class="subtitle">M365 アカウントでサインインして<br>Dataverse のスキーマを可視化します</p>
+        <button id="btn-login" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 9.2c-2 0-3.78-.98-4.86-2.48C5.36 13.1 7.6 12 10 12s4.64 1.1 4.86 2.72C13.78 16.22 12 17.2 10 17.2z" fill="white"/>
+          </svg>
+          Microsoft アカウントでサインイン
+        </button>
+        <p class="note">* あなたの認証情報はブラウザ外に送信されません</p>
+      </div>
+    </div>
+
+    <!-- ログイン後メイン -->
+    <div id="main-screen" class="screen hidden">
+      <header class="topbar">
+        <div class="topbar-left">
+          <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+            <rect width="48" height="48" rx="10" fill="#0078d4"/>
+            <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="white" opacity="0.9"/>
+            <circle cx="24" cy="24" r="6" fill="#0078d4"/>
+          </svg>
+          <span class="app-title">Dataverse Schema Viewer</span>
+        </div>
+        <div class="topbar-center">
+          <div class="env-selector">
+            <label>環境 URL</label>
+            <input id="env-url" type="url" placeholder="https://yourorg.crm7.dynamics.com" />
+            <button id="btn-load" class="btn btn-secondary">読み込む</button>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="user-info">
+            <span id="user-name"></span>
+            <button id="btn-logout" class="btn btn-ghost">サインアウト</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <!-- サイドパネル: テーブル一覧 -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h2>テーブル</h2>
+            <input id="search-tables" type="search" placeholder="検索..." />
+          </div>
+          <div id="table-list" class="table-list">
+            <p class="empty-state">環境 URL を入力して読み込んでください</p>
+          </div>
+        </aside>
+
+        <!-- メインキャンバス: ER図 -->
+        <main class="canvas-area">
+          <div id="status-bar" class="status-bar hidden"></div>
+          <div id="er-canvas" class="er-canvas">
+            <div class="canvas-empty">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" opacity="0.3">
+                <rect x="8" y="8" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
+                <rect x="36" y="28" width="20" height="28" rx="4" stroke="#555" stroke-width="2"/>
+                <path d="M28 22 L36 42" stroke="#555" stroke-width="2" stroke-dasharray="4 2"/>
+              </svg>
+              <p>左のリストからテーブルを選択すると<br>ER 図が表示されます</p>
+            </div>
+          </div>
+          <div class="canvas-toolbar">
+            <button id="btn-zoom-in" class="icon-btn" title="拡大">＋</button>
+            <button id="btn-zoom-out" class="icon-btn" title="縮小">－</button>
+            <button id="btn-fit" class="icon-btn" title="全体表示">⊡</button>
+            <button id="btn-export" class="icon-btn" title="PNG出力">↓</button>
+          </div>
+        </main>
+
+        <!-- 右パネル: 詳細 -->
+        <div id="detail-panel" class="detail-panel hidden">
+          <div class="detail-header">
+            <h3 id="detail-title">詳細</h3>
+            <button id="btn-close-detail" class="icon-btn">✕</button>
+          </div>
+          <div id="detail-content" class="detail-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MSAL.js CDN -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="src/auth.js"></script>
+  <script src="src/api.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

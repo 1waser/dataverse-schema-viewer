@@ -1,0 +1,185 @@
+// app.js — アプリケーションエントリポイント
+
+let allTables = [];
+let activeTableNames = new Set();
+let tableDetails = {};
+let currentEnvUrl = '';
+let cardIndex = 0;
+
+// ===== 初期化 =====
+(async () => {
+  const account = await initAuth();
+
+  if (account) {
+    showMain(account);
+  } else {
+    showLogin();
+  }
+
+  // ログインボタン
+  document.getElementById('btn-login').addEventListener('click', () => login());
+
+  // ログアウト
+  document.getElementById('btn-logout').addEventListener('click', () => logout());
+
+  // テーブル読み込み
+  document.getElementById('btn-load').addEventListener('click', loadTables);
+  document.getElementById('env-url').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadTables();
+  });
+
+  // テーブル検索
+  document.getElementById('search-tables').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    filterTableList(q);
+  });
+
+  // 詳細パネルを閉じる
+  document.getElementById('btn-close-detail').addEventListener('click', () => {
+    document.getElementById('detail-panel').classList.add('hidden');
+  });
+
+  // ズーム（シンプル実装）
+  document.getElementById('btn-fit').addEventListener('click', fitCanvas);
+})();
+
+// ===== 画面切替 =====
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('main-screen').classList.add('hidden');
+}
+
+function showMain(account) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+  document.getElementById('user-name').textContent =
+    account.name ?? account.username ?? 'ユーザー';
+}
+
+// ===== テーブル読み込み =====
+async function loadTables() {
+  const envUrl = document.getElementById('env-url').value.trim();
+  if (!envUrl) { alert('環境 URL を入力してください'); return; }
+
+  // https 確認
+  if (!envUrl.startsWith('https://')) {
+    alert('URL は https:// から始めてください');
+    return;
+  }
+
+  currentEnvUrl = envUrl;
+  setStatus('テーブル一覧を取得中...', true);
+
+  try {
+    const token = await getToken(envUrl);
+    allTables = await fetchTables(envUrl, token);
+
+    renderTableList(allTables, activeTableNames, onTableSelect);
+    setStatus(`${allTables.length} テーブルを取得しました`);
+    setTimeout(() => setStatus(null), 3000);
+  } catch (e) {
+    setStatus(null);
+    showError(e);
+  }
+}
+
+// ===== テーブル選択 =====
+async function onTableSelect(logicalName) {
+  // トグル
+  if (activeTableNames.has(logicalName)) {
+    activeTableNames.delete(logicalName);
+    document.getElementById(`card-${logicalName}`)?.remove();
+    delete tableDetails[logicalName];
+    renderTableList(allTables, activeTableNames, onTableSelect);
+    drawConnections(tableDetails);
+    return;
+  }
+
+  activeTableNames.add(logicalName);
+  renderTableList(allTables, activeTableNames, onTableSelect);
+
+  const table = allTables.find(t => t.LogicalName === logicalName);
+  if (!table) return;
+
+  setStatus(`${table.DisplayName?.UserLocalizedLabel?.Label ?? logicalName} を読み込み中...`, true);
+
+  try {
+    const token = await getToken(currentEnvUrl);
+    const [columns, relations] = await Promise.all([
+      fetchColumns(currentEnvUrl, logicalName, token),
+      fetchRelations(currentEnvUrl, logicalName, token),
+    ]);
+
+    tableDetails[logicalName] = { columns, relations };
+
+    const index = cardIndex++;
+    renderERCard(table, columns, relations, index, onFieldClick);
+    drawConnections(tableDetails);
+    setStatus(null);
+  } catch (e) {
+    activeTableNames.delete(logicalName);
+    renderTableList(allTables, activeTableNames, onTableSelect);
+    setStatus(null);
+    showError(e);
+  }
+}
+
+// ===== フィールドクリック =====
+function onFieldClick(table, column) {
+  showDetailPanel(table, column);
+}
+
+// ===== テーブル検索フィルタ =====
+function filterTableList(query) {
+  if (!query) {
+    renderTableList(allTables, activeTableNames, onTableSelect);
+    return;
+  }
+  const filtered = allTables.filter(t => {
+    const display = (t.DisplayName?.UserLocalizedLabel?.Label ?? '').toLowerCase();
+    const logical = t.LogicalName.toLowerCase();
+    return display.includes(query) || logical.includes(query);
+  });
+  renderTableList(filtered, activeTableNames, onTableSelect);
+}
+
+// ===== 全体表示 =====
+function fitCanvas() {
+  const cards = document.querySelectorAll('.er-table-card');
+  if (!cards.length) return;
+
+  let minX = Infinity, minY = Infinity;
+  cards.forEach(c => {
+    minX = Math.min(minX, parseInt(c.style.left));
+    minY = Math.min(minY, parseInt(c.style.top));
+  });
+
+  const dx = 40 - minX;
+  const dy = 40 - minY;
+
+  cards.forEach(c => {
+    const x = parseInt(c.style.left) + dx;
+    const y = parseInt(c.style.top)  + dy;
+    c.style.left = x + 'px';
+    c.style.top  = y + 'px';
+    const name = c.dataset.logical;
+    if (cardPositions[name]) {
+      cardPositions[name] = { x, y };
+    }
+  });
+  drawConnections(tableDetails);
+}
+
+// ===== エラー表示 =====
+function showError(e) {
+  console.error(e);
+  const msg = e.message ?? String(e);
+
+  if (msg.includes('401') || msg.includes('Unauthorized')) {
+    alert('認証エラー: Dataverse への権限がありません。\n「API のアクセス許可」で Dynamics CRM > user_impersonation が付与されているか確認してください。');
+  } else if (msg.includes('CORS') || msg.includes('Failed to fetch')) {
+    alert('接続エラー: 環境 URL を確認してください。\n正しい形式: https://yourorg.crm7.dynamics.com');
+  } else {
+    alert(`エラー: ${msg}`);
+  }
+}
