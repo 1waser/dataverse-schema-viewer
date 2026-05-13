@@ -352,7 +352,7 @@ function drawConnections(tableDetails) {
   if (!svg) {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'connection-svg';
-    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;';
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;overflow:visible;';
     wrap.insertBefore(svg, wrap.firstChild);
     svg.innerHTML = `<defs>
       <marker id="arrow-end" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
@@ -406,6 +406,7 @@ function drawConnections(tableDetails) {
       path.setAttribute('d', d);
       path.setAttribute('class', 'relation-line');
       path.setAttribute('marker-end', 'url(#arrow-end)');
+      path.style.pointerEvents = 'none';
 
       // ヒット領域
       const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -428,6 +429,7 @@ function drawConnections(tableDetails) {
         circle.setAttribute('r', '4');
         circle.setAttribute('fill', color);
         circle.setAttribute('opacity', i === 0 ? '0.9' : i === 1 ? '0.6' : '0.35');
+        circle.style.pointerEvents = 'none';
 
         const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
         anim.setAttribute('dur', '2.4s');
