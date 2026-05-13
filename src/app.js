@@ -36,6 +36,14 @@ let cardIndex = 0;
   // ログアウト
   document.getElementById('btn-logout').addEventListener('click', () => logout());
 
+  // デモモード（ログイン画面・トップバー両方）
+  const startDemo = () => {
+    showMain({ name: 'Demo User', username: 'demo' });
+    loadDemo();
+  };
+  document.getElementById('btn-demo').addEventListener('click', startDemo);
+  document.getElementById('btn-demo-login').addEventListener('click', startDemo);
+
   // テーブル読み込み
   document.getElementById('btn-load').addEventListener('click', loadTables);
   document.getElementById('env-url').addEventListener('keydown', (e) => {
