@@ -1,7 +1,7 @@
 // auth.js — MSAL.js 認証モジュール
 // アプリ登録後に CLIENT_ID を差し替えてください
 
-const CLIENT_ID = 'YOUR_CLIENT_ID_HERE'; // Azure AD アプリID を入力
+const CLIENT_ID = 'fffbcd12-7589-4e3a-8886-46a71eb30ba0';
 
 const msalConfig = {
   auth: {
