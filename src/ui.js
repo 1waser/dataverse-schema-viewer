@@ -163,6 +163,7 @@ function makeDraggable(card) {
       card.classList.remove('dragging');
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      if (typeof pushHistory === 'function') pushHistory();
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -326,7 +327,7 @@ function autoLayout() {
   });
 
   drawConnections();
-  setTimeout(fitAll, 50);
+  setTimeout(() => { fitAll(); if (typeof pushHistory === 'function') pushHistory(); }, 50);
 }
 
 // ===== 接続線（アニメーション玉付き） =====

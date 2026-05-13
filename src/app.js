@@ -78,6 +78,7 @@ function showMain(account) {
     account.name ?? account.username ?? 'ユーザー';
   initCanvasInteraction();
   renderGroupsPanel();
+  initHistory();
 }
 
 // ===== テーブル読み込み =====
@@ -109,13 +110,14 @@ async function loadTables() {
 
 // ===== テーブル選択 =====
 async function onTableSelect(logicalName) {
-  // トグル
+  // トグル（削除）
   if (activeTableNames.has(logicalName)) {
     activeTableNames.delete(logicalName);
     document.getElementById(`card-${logicalName}`)?.remove();
     delete tableDetails[logicalName];
     renderTableList(allTables, activeTableNames, onTableSelect);
     drawConnections(tableDetails);
+    pushHistory();
     return;
   }
 
@@ -141,6 +143,7 @@ async function onTableSelect(logicalName) {
     drawConnections(tableDetails);
     document.getElementById('canvas-empty')?.remove();
     setStatus(null);
+    pushHistory();
   } catch (e) {
     activeTableNames.delete(logicalName);
     renderTableList(allTables, activeTableNames, onTableSelect);
