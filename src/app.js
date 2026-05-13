@@ -38,8 +38,9 @@ let cardIndex = 0;
 
   // デモモード（ログイン画面・トップバー両方）
   const startDemo = () => {
-    showMain({ name: 'Demo User', username: 'demo' });
+    showMain({ name: 'デモユーザー', username: 'demo' });
     loadDemo();
+    document.getElementById('demo-badge').classList.remove('hidden');
   };
   document.getElementById('btn-demo').addEventListener('click', startDemo);
   document.getElementById('btn-demo-login').addEventListener('click', startDemo);
