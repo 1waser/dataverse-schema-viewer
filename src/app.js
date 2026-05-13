@@ -8,16 +8,30 @@ let cardIndex = 0;
 
 // ===== 初期化 =====
 (async () => {
-  const account = await initAuth();
-
-  if (account) {
-    showMain(account);
-  } else {
-    showLogin();
+  try {
+    const account = await initAuth();
+    if (account) {
+      showMain(account);
+    } else {
+      showLogin();
+    }
+  } catch (e) {
+    console.error('initAuth failed:', e);
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('main-screen').classList.add('hidden');
+    const note = document.querySelector('.note');
+    if (note) note.textContent = '初期化エラー: ' + e.message;
   }
 
   // ログインボタン
-  document.getElementById('btn-login').addEventListener('click', () => login());
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    try {
+      await login();
+    } catch (e) {
+      console.error('login failed:', e);
+      alert('ログインエラー: ' + e.message);
+    }
+  });
 
   // ログアウト
   document.getElementById('btn-logout').addEventListener('click', () => logout());

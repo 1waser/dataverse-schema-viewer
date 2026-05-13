@@ -1,4 +1,4 @@
-// auth.js — MSAL.js 認証モジュール
+// auth.js — MSAL.js 3.x 認証モジュール
 
 const CLIENT_ID = 'fffbcd12-7589-4e3a-8886-46a71eb30ba0';
 
@@ -14,19 +14,14 @@ const msalConfig = {
   },
 };
 
-const msalInstance = new msal.PublicClientApplication(msalConfig);
-
-function getDataverseScopes(envUrl) {
-  const base = envUrl.replace(/\/$/, '');
-  return [`${base}/user_impersonation`];
-}
+let msalInstance = null;
 
 async function initAuth() {
-  // MSAL 2.x では initialize() が必要
+  msalInstance = new msal.PublicClientApplication(msalConfig);
   await msalInstance.initialize();
 
   const response = await msalInstance.handleRedirectPromise();
-  if (response) {
+  if (response?.account) {
     msalInstance.setActiveAccount(response.account);
     return response.account;
   }
@@ -56,7 +51,7 @@ async function getToken(envUrl) {
   const account = msalInstance.getActiveAccount();
   if (!account) throw new Error('Not signed in');
 
-  const scopes = getDataverseScopes(envUrl);
+  const scopes = [`${envUrl.replace(/\/$/, '')}/user_impersonation`];
 
   try {
     const result = await msalInstance.acquireTokenSilent({ scopes, account });
