@@ -350,16 +350,30 @@ function tidyLayout() {
   const ch = {}, pa = {};
   nodes.forEach(n => { ch[n] = []; pa[n] = []; });
 
-  // グラフ構築（選択中テーブル間のみ）
-  const seen = new Set();
+  // 方向ごとのリレーション数を集計
+  const dirCount = {};
   Object.values(_tableDetails).forEach(({ relations }) => {
     relations.forEach(rel => {
       const p = rel.ReferencedEntity, c = rel.ReferencingEntity;
-      const key = `${p}->${c}`;
-      if (nodeSet.has(p) && nodeSet.has(c) && p !== c && !seen.has(key)) {
-        seen.add(key); ch[p].push(c); pa[c].push(p);
+      if (nodeSet.has(p) && nodeSet.has(c) && p !== c) {
+        const key = `${p}->${c}`;
+        dirCount[key] = (dirCount[key] ?? 0) + 1;
       }
     });
+  });
+
+  // ペアごとに「多い方向」だけをエッジとして採用
+  const addedPair = new Set();
+  Object.entries(dirCount).forEach(([key, cnt]) => {
+    const [p, c] = key.split('->');
+    const pairKey = [p, c].sort().join('|');
+    if (addedPair.has(pairKey)) return;
+    addedPair.add(pairKey);
+    const rev = `${c}->${p}`;
+    const revCnt = dirCount[rev] ?? 0;
+    // 多い方向を親→子として採用（同数なら最初に現れた方向）
+    const [parent, child] = cnt >= revCnt ? [p, c] : [c, p];
+    ch[parent].push(child); pa[child].push(parent);
   });
 
   // 他のテーブルと繋がっているか
