@@ -347,70 +347,45 @@ function tidyLayout() {
 
   const nodes = cards.map(c => c.dataset.logical);
   const nodeSet = new Set(nodes);
-  const childrenOf = {}, parentsOf = {}, adj = {};
-  nodes.forEach(n => { childrenOf[n] = []; parentsOf[n] = []; adj[n] = new Set(); });
+  const ch = {}, pa = {};
+  nodes.forEach(n => { ch[n] = []; pa[n] = []; });
 
-  // グラフ構築
-  const seenEdge = new Set();
+  // グラフ構築（選択中テーブル間のみ）
+  const seen = new Set();
   Object.values(_tableDetails).forEach(({ relations }) => {
     relations.forEach(rel => {
       const p = rel.ReferencedEntity, c = rel.ReferencingEntity;
       const key = `${p}->${c}`;
-      if (nodeSet.has(p) && nodeSet.has(c) && p !== c && !seenEdge.has(key)) {
-        seenEdge.add(key);
-        childrenOf[p].push(c);
-        parentsOf[c].push(p);
-        adj[p].add(c); adj[c].add(p);
+      if (nodeSet.has(p) && nodeSet.has(c) && p !== c && !seen.has(key)) {
+        seen.add(key); ch[p].push(c); pa[c].push(p);
       }
     });
   });
 
-  // 連結成分を検出（無向グラフ）
-  const visited = new Set();
-  const components = [];
-  nodes.forEach(start => {
-    if (visited.has(start)) return;
-    const comp = [];
-    const q = [start]; visited.add(start);
-    while (q.length) {
-      const n = q.shift(); comp.push(n);
-      adj[n].forEach(nb => { if (!visited.has(nb)) { visited.add(nb); q.push(nb); } });
-    }
-    components.push(comp);
-  });
+  // 他のテーブルと繋がっているか
+  const hasLink = n => ch[n].length > 0 || pa[n].length > 0;
+  const linked   = nodes.filter(hasLink);
+  const isolated = nodes.filter(n => !hasLink(n));
 
-  // 成分ごとに BFS でローカルレイヤー割り当て（1側が左、N側が右）
-  const localLayer = {};
-  const compWidth = [];
-  components.forEach(comp => {
-    const cs = new Set(comp);
-    const inDeg = {};
-    comp.forEach(n => { inDeg[n] = parentsOf[n].filter(p => cs.has(p)).length; });
-    const roots = comp.filter(n => inDeg[n] === 0);
-    roots.forEach(n => (localLayer[n] = 0));
-    const q = [...roots], vis2 = new Set(roots);
-    while (q.length) {
-      const n = q.shift();
-      childrenOf[n].filter(c => cs.has(c)).forEach(c => {
-        localLayer[c] = Math.max(localLayer[c] ?? 0, localLayer[n] + 1);
-        if (!vis2.has(c)) { vis2.add(c); q.push(c); }
-      });
-    }
-    comp.forEach(n => { if (localLayer[n] === undefined) localLayer[n] = 0; });
-    compWidth.push(Math.max(...comp.map(n => localLayer[n])) + 1);
-  });
+  // BFS で列（左=1側、右=N側）を割り当て
+  const colOf = {};
+  const inDeg = {};
+  linked.forEach(n => { inDeg[n] = pa[n].length; });
+  const roots = linked.filter(n => inDeg[n] === 0);
+  roots.forEach(n => (colOf[n] = 0));
+  const q = [...roots], vis = new Set(roots);
+  while (q.length) {
+    const n = q.shift();
+    ch[n].forEach(c => {
+      colOf[c] = Math.max(colOf[c] ?? 0, colOf[n] + 1);
+      if (!vis.has(c)) { vis.add(c); q.push(c); }
+    });
+  }
+  linked.forEach(n => { if (colOf[n] === undefined) colOf[n] = 0; });
 
-  // 成分をグローバル列にオフセット（成分同士を横に並べる）
-  const globalLayer = {};
-  let colOffset = 0;
-  components.forEach((comp, ci) => {
-    comp.forEach(n => { globalLayer[n] = colOffset + localLayer[n]; });
-    colOffset += compWidth[ci];
-  });
-
-  // グローバル列ごとにノードをまとめる
+  // 列ごとにグループ化して配置
   const byCol = {};
-  nodes.forEach(n => { const l = globalLayer[n]; (byCol[l] = byCol[l] ?? []).push(n); });
+  linked.forEach(n => { const l = colOf[n]; (byCol[l] = byCol[l] ?? []).push(n); });
   const cols = Object.keys(byCol).map(Number).sort((a, b) => a - b);
 
   const COL_W = 370, CARD_H = 310, START_X = 60, START_Y = 60;
@@ -418,49 +393,42 @@ function tidyLayout() {
 
   cols.forEach(l => {
     const list = byCol[l];
-
-    // 親のY座標平均でソート（矢線の交差を減らす）
-    const getParentY = n => {
-      const ps = parentsOf[n].filter(p => posY[p] !== undefined);
-      return ps.length ? ps.reduce((s, p) => s + posY[p], 0) / ps.length : 0;
-    };
-    list.sort((a, b) => getParentY(a) - getParentY(b));
-
-    // 優先：親と同Y（右）→ 下（右下）→ 上（右上）
-    const placed = new Set();
-    const items = [];
-    list.forEach(n => {
-      if (placed.has(n)) return;
-      const ps = parentsOf[n].filter(p => posY[p] !== undefined);
-      const refY = ps.length ? Math.round(ps.reduce((s, p) => s + posY[p], 0) / ps.length) : null;
-      const pKey = JSON.stringify(parentsOf[n].slice().sort());
-      const sibs = list.filter(s => !placed.has(s) && JSON.stringify(parentsOf[s].slice().sort()) === pKey);
-      sibs.forEach(s => placed.add(s));
-      sibs.forEach((s, i) => {
-        const dy = i === 0 ? 0 : i % 2 === 1 ? i * CARD_H : -(i) * CARD_H;
-        items.push({ name: s, y: (refY ?? (START_Y + items.length * CARD_H)) + dy });
-      });
+    // 親のY平均でソート → 交差を減らす
+    list.sort((a, b) => {
+      const avg = n => { const ps = pa[n].filter(p => posY[p] !== undefined); return ps.length ? ps.reduce((s, p) => s + posY[p], 0) / ps.length : 0; };
+      return avg(a) - avg(b);
     });
-
-    // 重なり解消
-    items.sort((a, b) => a.y - b.y);
-    let minY = START_Y;
-    items.forEach(item => {
-      item.y = Math.max(item.y, minY);
-      minY = item.y + CARD_H;
-      posY[item.name] = item.y;
+    // 上から順に配置（親に近いY優先）
+    let nextY = START_Y;
+    list.forEach(n => {
+      const ps = pa[n].filter(p => posY[p] !== undefined);
+      const ideal = ps.length ? Math.round(ps.reduce((s, p) => s + posY[p], 0) / ps.length) : nextY;
+      posY[n] = Math.max(ideal, nextY);
+      nextY = posY[n] + CARD_H;
     });
   });
 
-  // カードを移動
+  // 繋がっているテーブルを配置
   cols.forEach(l => {
     byCol[l].forEach(name => {
       const x = START_X + l * COL_W;
-      const y = posY[name] ?? START_Y;
+      const y = posY[name];
       cardPositions[name] = { x, y };
       const card = document.getElementById(`card-${name}`);
       if (card) { card.style.left = x + 'px'; card.style.top = y + 'px'; }
     });
+  });
+
+  // 孤立テーブルは下の行に横並び
+  const maxY = linked.length > 0
+    ? Math.max(...linked.map(n => posY[n])) + CARD_H + 60
+    : START_Y;
+  isolated.forEach((name, i) => {
+    const x = START_X + i * COL_W;
+    const y = maxY;
+    cardPositions[name] = { x, y };
+    const card = document.getElementById(`card-${name}`);
+    if (card) { card.style.left = x + 'px'; card.style.top = y + 'px'; }
   });
 
   drawConnections();
