@@ -343,6 +343,13 @@ function autoLayout() {
 // ===== 接続線（アニメーション玉付き） =====
 let _tableDetails = {};
 let _pathCounter  = 0;
+let _spreadLines  = false;
+
+function toggleSpreadLines() {
+  _spreadLines = !_spreadLines;
+  document.getElementById('btn-spread-lines')?.classList.toggle('tool-btn-active', _spreadLines);
+  drawConnections();
+}
 
 function drawConnections(tableDetails) {
   if (tableDetails) _tableDetails = tableDetails;
@@ -376,6 +383,7 @@ function drawConnections(tableDetails) {
   g.innerHTML = '';
 
   const drawn = new Map(); // key → offset count
+  let globalConnIdx = 0;  // spread用グローバル連番
 
   Object.values(_tableDetails).forEach(({ relations }) => {
     relations.forEach(rel => {
@@ -387,7 +395,6 @@ function drawConnections(tableDetails) {
       const key = [rel.ReferencingEntity, rel.ReferencedEntity].sort().join('|');
       const offsetIdx = drawn.get(key) ?? 0;
       drawn.set(key, offsetIdx + 1);
-      const offset = offsetIdx * 18;
 
       const from = getEdgePoint(nCard, oneCard);   // N側 出発
       const to   = getEdgePoint(oneCard, nCard);   // 1側 到着
@@ -397,8 +404,22 @@ function drawConnections(tableDetails) {
       const fSign = from.side === 'right' ? 1 : -1;
       const tSign = to.side   === 'right' ? 1 : -1;
 
+      // 線のパス計算（通常 vs 整理モード）
+      let d;
+      if (_spreadLines) {
+        // 上下交互に弧を描いて重なりを解消
+        const lane = globalConnIdx;
+        const arcMag = (Math.floor(lane / 2) + 1) * 70;
+        const arcY   = lane % 2 === 0 ? -arcMag : arcMag;
+        const midX   = (from.x + to.x) / 2;
+        d = `M${from.x},${from.y} C${from.x + fSign*cp},${from.y + arcY} ${to.x + tSign*cp},${to.y + arcY} ${to.x},${to.y}`;
+      } else {
+        const offset = offsetIdx * 18;
+        d = `M${from.x},${from.y + offset} C${from.x + fSign*cp},${from.y + offset} ${to.x + tSign*cp},${to.y + offset} ${to.x},${to.y + offset}`;
+      }
+      globalConnIdx++;
+
       const pathId = `rel-path-${_pathCounter++}`;
-      const d = `M${from.x},${from.y + offset} C${from.x + fSign*cp},${from.y + offset} ${to.x + tSign*cp},${to.y + offset} ${to.x},${to.y + offset}`;
 
       // パス本体
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');

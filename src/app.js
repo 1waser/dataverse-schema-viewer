@@ -63,6 +63,9 @@ let cardIndex = 0;
 
   // ズーム（シンプル実装）
   document.getElementById('btn-fit').addEventListener('click', fitCanvas);
+
+  // 線を整理
+  document.getElementById('btn-spread-lines').addEventListener('click', toggleSpreadLines);
 })();
 
 // ===== 画面切替 =====
