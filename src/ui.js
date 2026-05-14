@@ -352,8 +352,8 @@ function drawConnections(tableDetails) {
   if (!svg) {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'connection-svg';
-    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;overflow:visible;';
-    wrap.insertBefore(svg, wrap.firstChild);
+    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;overflow:visible;pointer-events:none;';
+    wrap.appendChild(svg);
     svg.innerHTML = `<defs>
       <marker id="arrow-end" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
         <path d="M0,0 L0,7 L9,3.5 Z" fill="#0078d4" opacity="0.65"/>

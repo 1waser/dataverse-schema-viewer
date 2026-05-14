@@ -41,10 +41,11 @@ async function login() {
   });
 }
 
-async function logout() {
-  await msalInstance.logoutRedirect({
-    postLogoutRedirectUri: window.location.origin + window.location.pathname,
-  });
+function logout() {
+  // セッションストレージ（MSALキャッシュ含む）を全消去してトップに戻る
+  sessionStorage.clear();
+  localStorage.clear();
+  location.href = window.location.origin + window.location.pathname;
 }
 
 async function getToken(envUrl) {
