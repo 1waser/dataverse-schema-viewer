@@ -65,8 +65,10 @@ let cardIndex = 0;
   document.getElementById('btn-fit').addEventListener('click', fitCanvas);
 
   // サイドバー開閉
-  document.getElementById('btn-close-sidebar').addEventListener('click', () => setSidebar(false));
-  document.getElementById('btn-open-sidebar').addEventListener('click',  () => setSidebar(true));
+  document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+    const open = document.querySelector('.sidebar').classList.contains('collapsed');
+    setSidebar(open);
+  });
 
   // 保存（将来実装）
   document.getElementById('btn-save').addEventListener('click', () => {
@@ -217,7 +219,8 @@ function fitCanvas() {
 // ===== サイドバー開閉 =====
 function setSidebar(open) {
   document.querySelector('.sidebar').classList.toggle('collapsed', !open);
-  document.getElementById('btn-open-sidebar').classList.toggle('hidden', open);
+  document.getElementById('sidebar-tab-icon').textContent = open ? '‹' : '›';
+  document.getElementById('btn-toggle-sidebar').style.left = open ? '260px' : '0';
 }
 
 // ===== 全画面 =====

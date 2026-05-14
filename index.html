@@ -64,7 +64,6 @@
           <div class="sidebar-header">
             <h2>テーブル</h2>
             <input id="search-tables" type="search" placeholder="検索..." />
-            <button id="btn-close-sidebar" class="icon-btn" title="サイドバーを閉じる">‹</button>
           </div>
           <div id="table-list" class="table-list">
             <p class="empty-state">環境 URL を入力して読み込んでください</p>
@@ -73,8 +72,11 @@
           <div id="groups-panel" class="groups-panel"></div>
         </aside>
 
-        <!-- サイドバーを開くボタン（閉じているとき表示） -->
-        <button id="btn-open-sidebar" class="sidebar-open-btn hidden" title="サイドバーを開く">›<br><span>テーブル</span></button>
+        <!-- サイドバー開閉タブ（常に表示、状態で向き変わる） -->
+        <button id="btn-toggle-sidebar" class="sidebar-tab" title="サイドバーを開閉する">
+          <span id="sidebar-tab-icon">‹</span>
+          <span class="sidebar-tab-label">テーブル</span>
+        </button>
 
         <!-- メインキャンバス -->
         <main class="canvas-area">
