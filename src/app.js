@@ -64,6 +64,10 @@ let cardIndex = 0;
   // ズーム（シンプル実装）
   document.getElementById('btn-fit').addEventListener('click', fitCanvas);
 
+  // 全画面
+  document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+
   // 見やすく
   document.getElementById('btn-tidy-layout').addEventListener('click', tidyLayout);
 })();
@@ -199,6 +203,20 @@ function fitCanvas() {
     }
   });
   drawConnections(tableDetails);
+}
+
+// ===== 全画面 =====
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+function updateFullscreenIcon() {
+  const isFs = !!document.fullscreenElement;
+  document.getElementById('icon-fullscreen-enter').style.display = isFs ? 'none' : '';
+  document.getElementById('icon-fullscreen-exit').style.display  = isFs ? '' : 'none';
 }
 
 // ===== エラー表示 =====

@@ -97,16 +97,6 @@
             <div class="toolbar-sep"></div>
 
             <!-- 配置 -->
-            <button id="btn-auto-layout" class="tool-btn" title="最適配置">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="3" width="4" height="4" rx="1" fill="currentColor" opacity=".7"/>
-                <rect x="1" y="9" width="4" height="4" rx="1" fill="currentColor" opacity=".7"/>
-                <rect x="6" y="6" width="4" height="4" rx="1" fill="currentColor"/>
-                <rect x="11" y="3" width="4" height="4" rx="1" fill="currentColor" opacity=".5"/>
-                <rect x="11" y="9" width="4" height="4" rx="1" fill="currentColor" opacity=".5"/>
-              </svg>
-              最適配置
-            </button>
             <button id="btn-tidy-layout" class="tool-btn" title="N側テーブルを右に配置して矢線を見やすくする">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <rect x="1" y="5" width="5" height="6" rx="1" fill="currentColor" opacity=".7"/>
@@ -133,8 +123,19 @@
               リセット
             </button>
 
+            <!-- 全画面 -->
+            <button id="btn-fullscreen" class="tool-btn" title="全画面モード (F11)" style="margin-left:auto">
+              <svg id="icon-fullscreen-enter" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <svg id="icon-fullscreen-exit" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none">
+                <path d="M5 1v4H1M11 1v4h4M15 11h-4v4M1 11h4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              全画面
+            </button>
+
             <!-- 書き出し（将来: Excel） -->
-            <button id="btn-export" class="tool-btn" title="書き出し（Excel対応予定）" style="margin-left:auto">
+            <button id="btn-export" class="tool-btn" title="書き出し（Excel対応予定）">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
