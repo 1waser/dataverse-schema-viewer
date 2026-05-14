@@ -64,6 +64,10 @@ let cardIndex = 0;
   // ズーム（シンプル実装）
   document.getElementById('btn-fit').addEventListener('click', fitCanvas);
 
+  // サイドバー開閉
+  document.getElementById('btn-close-sidebar').addEventListener('click', () => setSidebar(false));
+  document.getElementById('btn-open-sidebar').addEventListener('click',  () => setSidebar(true));
+
   // 保存（将来実装）
   document.getElementById('btn-save').addEventListener('click', () => {
     alert('保存機能は近日対応予定です。');
@@ -208,6 +212,12 @@ function fitCanvas() {
     }
   });
   drawConnections(tableDetails);
+}
+
+// ===== サイドバー開閉 =====
+function setSidebar(open) {
+  document.querySelector('.sidebar').classList.toggle('collapsed', !open);
+  document.getElementById('btn-open-sidebar').classList.toggle('hidden', open);
 }
 
 // ===== 全画面 =====
