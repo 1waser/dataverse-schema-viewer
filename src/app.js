@@ -64,6 +64,11 @@ let cardIndex = 0;
   // ズーム（シンプル実装）
   document.getElementById('btn-fit').addEventListener('click', fitCanvas);
 
+  // 保存（将来実装）
+  document.getElementById('btn-save').addEventListener('click', () => {
+    alert('保存機能は近日対応予定です。');
+  });
+
   // 全画面
   document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', updateFullscreenIcon);
@@ -146,7 +151,7 @@ async function onTableSelect(logicalName) {
     tableDetails[logicalName] = { columns, relations };
 
     const index = cardIndex++;
-    renderERCard(table, columns, relations, index, onFieldClick);
+    renderERCard(table, columns, relations, index, onFieldClick, onTableSelect);
     drawConnections(tableDetails);
     document.getElementById('canvas-empty')?.remove();
     setStatus(null);

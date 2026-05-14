@@ -74,7 +74,7 @@ function renderTableList(tables, activeNames, onSelect) {
 }
 
 // ===== ER カード =====
-function renderERCard(table, columns, relations, index, onFieldClick) {
+function renderERCard(table, columns, relations, index, onFieldClick, onCardClose) {
   const canvas = document.getElementById('er-canvas-inner');
   document.getElementById(`card-${table.LogicalName}`)?.remove();
 
@@ -115,6 +115,7 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
   card.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${CARD_WIDTH}px`;
 
   card.innerHTML = `
+    <button class="card-close-btn" title="キャンバスから削除">✕</button>
     <div class="card-header" style="background:${headerGrad}">
       <div class="entity-icon">${isCustom ? '✦' : '◈'}</div>
       <div class="entity-titles">
@@ -138,6 +139,11 @@ function renderERCard(table, columns, relations, index, onFieldClick) {
       const col = columns.find(c => c.LogicalName === el.dataset.logical);
       if (col) onFieldClick(table, col);
     });
+  });
+
+  card.querySelector('.card-close-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    onCardClose?.(table.LogicalName);
   });
 
   canvas.appendChild(card);
