@@ -10,24 +10,93 @@
   <div id="app">
     <!-- ログイン前 -->
     <div id="login-screen" class="screen">
-      <div class="login-card">
-        <div class="logo">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="12" fill="#0078d4"/>
-            <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="white" opacity="0.9"/>
-            <circle cx="24" cy="24" r="6" fill="#0078d4"/>
-          </svg>
+      <div class="login-layout">
+
+        <!-- 左：ログインカード -->
+        <div class="login-card">
+          <div class="logo">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="12" fill="#0078d4"/>
+              <path d="M12 24 L24 12 L36 24 L24 36 Z" fill="white" opacity="0.9"/>
+              <circle cx="24" cy="24" r="6" fill="#0078d4"/>
+            </svg>
+          </div>
+          <h1>Dataverse Schema Viewer</h1>
+          <p class="subtitle">M365 アカウントでサインインして<br>Dataverse のスキーマを可視化します</p>
+          <button id="btn-login" class="btn btn-primary">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 9.2c-2 0-3.78-.98-4.86-2.48C5.36 13.1 7.6 12 10 12s4.64 1.1 4.86 2.72C13.78 16.22 12 17.2 10 17.2z" fill="white"/>
+            </svg>
+            Microsoft アカウントでサインイン
+          </button>
+          <p class="note">* あなたの認証情報はブラウザ外に送信されません</p>
+          <button id="btn-demo-login" class="btn btn-demo-login">サンプルデータでデモを見る →</button>
         </div>
-        <h1>Dataverse Schema Viewer</h1>
-        <p class="subtitle">M365 アカウントでサインインして<br>Dataverse のスキーマを可視化します</p>
-        <button id="btn-login" class="btn btn-primary">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 9.2c-2 0-3.78-.98-4.86-2.48C5.36 13.1 7.6 12 10 12s4.64 1.1 4.86 2.72C13.78 16.22 12 17.2 10 17.2z" fill="white"/>
-          </svg>
-          Microsoft アカウントでサインイン
-        </button>
-        <p class="note">* あなたの認証情報はブラウザ外に送信されません</p>
-        <button id="btn-demo-login" class="btn btn-demo-login">サンプルデータでデモを見る →</button>
+
+        <!-- 右：更新履歴 -->
+        <div class="changelog-panel">
+          <h2 class="changelog-title">更新履歴</h2>
+          <div class="changelog-list">
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-14</span>
+                <span class="changelog-tag tag-new">新機能</span>
+              </div>
+              <div class="changelog-desc">サイドバーの開閉ボタンを追加。タブをクリックで表示・非表示を切り替え可能に。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-14</span>
+                <span class="changelog-tag tag-new">新機能</span>
+              </div>
+              <div class="changelog-desc">ER図カードをホバーすると右上に × ボタンを表示。クリックでそのテーブルを未選択状態に戻せる。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-14</span>
+                <span class="changelog-tag tag-new">新機能</span>
+              </div>
+              <div class="changelog-desc">全画面モードボタンを追加。ブラウザを画面いっぱいに広げてスキーマを確認できる。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-14</span>
+                <span class="changelog-tag tag-improve">改善</span>
+              </div>
+              <div class="changelog-desc">「見やすく」ボタンを改善。2テーブル間に複数のリレーションがある場合も正しく横並びに配置されるよう修正。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-13</span>
+                <span class="changelog-tag tag-new">新機能</span>
+              </div>
+              <div class="changelog-desc">「見やすく」ボタンを追加。繋がっているテーブルを1側が左・N側が右に自動配置。関係のないテーブルは下段に横並び。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-13</span>
+                <span class="changelog-tag tag-fix">修正</span>
+              </div>
+              <div class="changelog-desc">矢線ホバーのツールチップが表示されない不具合を修正。外部キー（FK）の表示名・論理名も確認できるように。</div>
+            </div>
+
+            <div class="changelog-item">
+              <div class="changelog-meta">
+                <span class="changelog-date">2026-05-12</span>
+                <span class="changelog-tag tag-improve">改善</span>
+              </div>
+              <div class="changelog-desc">矢線ホバー時にオレンジ色にハイライト。FK列情報をツールチップで表示。テーブル検索フィルタの即時反映を修正。</div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
 
