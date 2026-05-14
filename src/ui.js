@@ -340,16 +340,120 @@ function autoLayout() {
   setTimeout(() => { fitAll(); if (typeof pushHistory === 'function') pushHistory(); }, 50);
 }
 
+// ===== 見やすく配置 =====
+function tidyLayout() {
+  const cards = [...document.querySelectorAll('.er-table-card')];
+  if (!cards.length) return;
+
+  const nodes = new Set(cards.map(c => c.dataset.logical));
+  const childrenOf = {};
+  const parentsOf  = {};
+  const inDegree   = {};
+  nodes.forEach(n => { childrenOf[n] = []; parentsOf[n] = []; inDegree[n] = 0; });
+
+  const seen = new Set();
+  Object.values(_tableDetails).forEach(({ relations }) => {
+    relations.forEach(rel => {
+      const p = rel.ReferencedEntity;   // 1側（親）
+      const c = rel.ReferencingEntity;  // N側（子）
+      const key = `${p}->${c}`;
+      if (nodes.has(p) && nodes.has(c) && p !== c && !seen.has(key)) {
+        seen.add(key);
+        childrenOf[p].push(c);
+        parentsOf[c].push(p);
+        inDegree[c]++;
+      }
+    });
+  });
+
+  // BFS でレイヤー（列）を決定
+  const layer = {};
+  const roots = [...nodes].filter(n => inDegree[n] === 0);
+  roots.forEach(n => (layer[n] = 0));
+  const bfsQ = [...roots];
+  const visited = new Set(roots);
+  while (bfsQ.length) {
+    const n = bfsQ.shift();
+    childrenOf[n].forEach(c => {
+      layer[c] = Math.max(layer[c] ?? 0, layer[n] + 1);
+      if (!visited.has(c)) { visited.add(c); bfsQ.push(c); }
+    });
+  }
+  nodes.forEach(n => { if (layer[n] === undefined) layer[n] = 0; });
+
+  const byLayer = {};
+  nodes.forEach(n => {
+    const l = layer[n];
+    (byLayer[l] = byLayer[l] ?? []).push(n);
+  });
+
+  const COL_W = 370, CARD_H = 310, START_X = 60, START_Y = 60;
+  const posY = {};
+
+  const layers = Object.keys(byLayer).map(Number).sort((a, b) => a - b);
+  layers.forEach(l => {
+    const list = byLayer[l];
+
+    if (l === 0) {
+      // ルート層は上から順番に配置
+      list.forEach((n, i) => { posY[n] = START_Y + i * CARD_H; });
+    } else {
+      // 各ノードの「代表親Y」で並び替え（交差を減らす）
+      const parentY = n => {
+        const ps = parentsOf[n].filter(p => posY[p] !== undefined);
+        return ps.length ? ps.reduce((s, p) => s + posY[p], 0) / ps.length : Infinity;
+      };
+      list.sort((a, b) => parentY(a) - parentY(b));
+
+      // 優先順: 親と同Y（右）→ 親より下（右下）→ 親より上（右上）
+      // 親グループごとにまとめて配置
+      const placed = new Set();
+      const orderedList = [];
+      list.forEach(n => {
+        if (!placed.has(n)) {
+          const ps = parentsOf[n].filter(p => posY[p] !== undefined);
+          const refY = ps.length ? Math.round(ps.reduce((s, p) => s + posY[p], 0) / ps.length) : null;
+          // 同じ親を持つ兄弟をまとめる
+          const siblings = list.filter(s => !placed.has(s) && JSON.stringify(parentsOf[s].sort()) === JSON.stringify(parentsOf[n].sort()));
+          siblings.forEach(s => placed.add(s));
+          // 1人目を親と同Y、2人目以降を下→上交互
+          siblings.forEach((s, idx) => {
+            const sign = idx === 0 ? 0 : idx % 2 === 1 ? idx : -idx;
+            const baseY = refY ?? (START_Y + orderedList.length * CARD_H);
+            orderedList.push({ name: s, y: baseY + sign * CARD_H });
+          });
+        }
+      });
+
+      // 重なり解消：上から詰めて最低 START_Y
+      orderedList.sort((a, b) => a.y - b.y);
+      let minY = START_Y;
+      orderedList.forEach(item => {
+        item.y = Math.max(item.y, minY);
+        minY = item.y + CARD_H;
+        posY[item.name] = item.y;
+      });
+    }
+  });
+
+  // カードを移動
+  layers.forEach(l => {
+    byLayer[l].forEach(name => {
+      const x = START_X + l * COL_W;
+      const y = posY[name] ?? START_Y;
+      cardPositions[name] = { x, y };
+      const card = document.getElementById(`card-${name}`);
+      if (card) { card.style.left = x + 'px'; card.style.top = y + 'px'; }
+    });
+  });
+
+  drawConnections();
+  setTimeout(() => { fitAll(); if (typeof pushHistory === 'function') pushHistory(); }, 50);
+}
+
 // ===== 接続線（アニメーション玉付き） =====
 let _tableDetails = {};
 let _pathCounter  = 0;
-let _spreadLines  = false;
-
-function toggleSpreadLines() {
-  _spreadLines = !_spreadLines;
-  document.getElementById('btn-spread-lines')?.classList.toggle('tool-btn-active', _spreadLines);
-  drawConnections();
-}
 
 function drawConnections(tableDetails) {
   if (tableDetails) _tableDetails = tableDetails;
@@ -383,8 +487,6 @@ function drawConnections(tableDetails) {
   g.innerHTML = '';
 
   const drawn = new Map(); // key → offset count
-  let globalConnIdx = 0;  // spread用グローバル連番
-
   Object.values(_tableDetails).forEach(({ relations }) => {
     relations.forEach(rel => {
       // N側 = ReferencingEntity (子), 1側 = ReferencedEntity (親)
@@ -395,6 +497,7 @@ function drawConnections(tableDetails) {
       const key = [rel.ReferencingEntity, rel.ReferencedEntity].sort().join('|');
       const offsetIdx = drawn.get(key) ?? 0;
       drawn.set(key, offsetIdx + 1);
+      const offset = offsetIdx * 18;
 
       const from = getEdgePoint(nCard, oneCard);   // N側 出発
       const to   = getEdgePoint(oneCard, nCard);   // 1側 到着
@@ -404,20 +507,7 @@ function drawConnections(tableDetails) {
       const fSign = from.side === 'right' ? 1 : -1;
       const tSign = to.side   === 'right' ? 1 : -1;
 
-      // 線のパス計算（通常 vs 整理モード）
-      let d;
-      if (_spreadLines) {
-        // 上下交互に弧を描いて重なりを解消
-        const lane = globalConnIdx;
-        const arcMag = (Math.floor(lane / 2) + 1) * 70;
-        const arcY   = lane % 2 === 0 ? -arcMag : arcMag;
-        const midX   = (from.x + to.x) / 2;
-        d = `M${from.x},${from.y} C${from.x + fSign*cp},${from.y + arcY} ${to.x + tSign*cp},${to.y + arcY} ${to.x},${to.y}`;
-      } else {
-        const offset = offsetIdx * 18;
-        d = `M${from.x},${from.y + offset} C${from.x + fSign*cp},${from.y + offset} ${to.x + tSign*cp},${to.y + offset} ${to.x},${to.y + offset}`;
-      }
-      globalConnIdx++;
+      const d = `M${from.x},${from.y + offset} C${from.x + fSign*cp},${from.y + offset} ${to.x + tSign*cp},${to.y + offset} ${to.x},${to.y + offset}`;
 
       const pathId = `rel-path-${_pathCounter++}`;
 

@@ -107,12 +107,14 @@
               </svg>
               最適配置
             </button>
-            <button id="btn-spread-lines" class="tool-btn" title="重なった矢線を広げて見やすくする">
+            <button id="btn-tidy-layout" class="tool-btn" title="N側テーブルを右に配置して矢線を見やすくする">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M2 4 C5 4 5 8 8 8 C11 8 11 12 14 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-                <path d="M2 12 C5 12 5 8 8 8 C11 8 11 4 14 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <rect x="1" y="5" width="5" height="6" rx="1" fill="currentColor" opacity=".7"/>
+                <rect x="10" y="2" width="5" height="4" rx="1" fill="currentColor" opacity=".5"/>
+                <rect x="10" y="10" width="5" height="4" rx="1" fill="currentColor" opacity=".5"/>
+                <path d="M6 8 L10 4M6 8 L10 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
               </svg>
-              線を整理
+              見やすく
             </button>
             <button id="btn-fit" class="tool-btn" title="全体表示">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
